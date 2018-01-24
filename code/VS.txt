@@ -1,0 +1,1047 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+using System.Net.Sockets;
+using System.Net;
+using System.Diagnostics;
+using MySql.Data.MySqlClient;
+using Excel = Microsoft.Office.Interop.Excel;
+using System.IO;
+using System.Data.OleDb;
+
+namespace VFFGUI
+{
+    public partial class Form1 : Form
+    {
+        UdpClient client;
+        IPEndPoint receivePoint, receivePoint1, receivePoint0, receivePoint00,receivePointm,receivePoint10;
+        System.Text.ASCIIEncoding encode;
+        UdpState s;
+        Timer timer = new Timer();
+        Stopwatch st = new Stopwatch();
+        int mode=0;
+        int i = 0;
+        int n, dt3,tm;
+        int m1 = 0;
+        int m2 = 0;
+        int m3 = 0;
+        string m,dt2,belt,record,trcd,tblt,tdate2,tdate3,rmt,man;
+        string[] date2 = new string[128];
+        string[] blt = new string[128];
+        string[] date3 = new string[128];
+        string[] rcd = new string[128];
+        string[] stoptime = new string[128];
+        int[] remote = new int[128];
+        string date1;
+        int reindex=0;
+        int edit = 0;
+        int file = 0;
+        int view = 0;
+        int view1 = 0;
+        string ip;
+        string ip1,ip2;
+        int manip;
+        string s1, s2, s3,s101,s102,s103;
+        string[] REMOTE = { "REMOTE1_ON ", "REMOTE2_ON ", "REMOTE3_ON ", "REMOTE4_ON ", "REMOTE5_ON ", "REMOTE6_ON ", "REMOTE7_ON ", "REMOTE8_ON ", "REMOTE9_ON ", "REMOTE10_ON " };
+        int[] RMT = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, };
+        public Form1()
+        {
+           
+            try
+            {
+                InitializeComponent();
+                fillcombo();
+                loadtable();
+                loadtable1();
+                initializeVariables();
+                comboBox1.Items.Add("1");
+                comboBox1.Items.Add("2");
+                comboBox1.Items.Add("3");
+                comboBox2.Items.Add("1");
+                comboBox2.Items.Add("2");
+                comboBox2.Items.Add("3");
+                comboBox2.Items.Add("4");
+                comboBox2.Items.Add("5");
+                comboBox2.Items.Add("6");
+                comboBox2.Items.Add("7");
+                comboBox2.Items.Add("8");
+                comboBox2.Items.Add("9");
+                comboBox2.Items.Add("10");
+                button8.Visible = false;
+                button17.Visible = false;
+                button18.Visible = false;
+                progressBar2.Visible = false;
+                progressBar3.Visible = false;
+                progressBar4.Visible = false;
+                this.dataGridView2.Columns[0].FillWeight = 25;
+                this.dataGridView2.Columns[1].FillWeight = 25;
+                this.dataGridView2.Columns[2].FillWeight = 25;
+                this.dataGridView2.Columns[3].FillWeight = 25;
+            }
+            catch (Exception e)
+            {
+                label15.Text = e.ToString(); 
+            }
+        }
+
+
+        void fillcombo()
+        {
+            string constring = "datasource=localhost;port=3306;username=root;password=root";
+            string Query = "select*from database.etable;";
+
+            MySqlConnection condatabase = new MySqlConnection(constring);
+            MySqlCommand cmddatabas = new MySqlCommand(Query, condatabase);
+            MySqlDataReader myreader;
+            try
+            {
+                condatabase.Open();
+                myreader = cmddatabas.ExecuteReader();
+                
+                while (myreader.Read())
+                {
+                    
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+
+            }
+        
+        }
+
+        public void ReceiveCallback(IAsyncResult ar)
+        {
+            UdpClient u = (UdpClient)((UdpState)(ar.AsyncState)).u;
+            IPEndPoint e = (IPEndPoint)((UdpState)(ar.AsyncState)).e;
+
+            Byte[] receiveBytes = u.EndReceive(ar, ref e);
+            string receiveString = Encoding.ASCII.GetString(receiveBytes); //BUTTON1_OFF
+            //button.Text = ","+receiveString+",";
+
+            CheckForIllegalCrossThreadCalls = false;
+            //if (m1 == 0)
+            //{ 
+            if (receiveString.Contains("SENSOR011_ON "))
+            {
+                dataGridView2.Rows[0].Cells[1].Style.BackColor = Color.Yellow;
+                dataGridView2.Rows[0].Cells[1].Style.ForeColor = Color.BlueViolet;
+                dataGridView2.Rows[0].Cells[1].Value = "Low!";
+                byte[] sendData = encode.GetBytes("SENSOR1_ON ");
+                client.Send(sendData, sendData.Length, receivePoint1);
+            }
+            if (receiveString.Contains("SENSOR011_OFF"))
+            {
+                dataGridView2.Rows[0].Cells[1].Style.BackColor = Color.White;
+                dataGridView2.Rows[0].Cells[1].Style.ForeColor = Color.White;
+                dataGridView2.Rows[0].Cells[1].Value = "";
+                byte[] sendData = encode.GetBytes("SENSOR1_OFF");
+                client.Send(sendData, sendData.Length, receivePoint1);
+            }
+            if (receiveString.Contains("SENSOR012_ON "))
+            {
+                dataGridView2.Rows[0].Cells[2].Style.BackColor = Color.Yellow;
+                dataGridView2.Rows[0].Cells[2].Style.ForeColor = Color.BlueViolet;
+                dataGridView2.Rows[0].Cells[2].Value = "Low!";
+                byte[] sendData = encode.GetBytes("SENSOR2_ON ");
+                client.Send(sendData, sendData.Length, receivePoint1);
+            }
+            if (receiveString.Contains("SENSOR012_OFF"))
+            {
+                dataGridView2.Rows[0].Cells[2].Style.BackColor = Color.White;
+                dataGridView2.Rows[0].Cells[2].Style.ForeColor = Color.White;
+                dataGridView2.Rows[0].Cells[2].Value = "";
+                byte[] sendData = encode.GetBytes("SENSOR2_OFF");
+                client.Send(sendData, sendData.Length, receivePoint1);
+            }
+            if (receiveString.Contains("SENSOR013_ON "))
+            {
+                dataGridView2.Rows[0].Cells[3].Style.BackColor = Color.Yellow;
+                dataGridView2.Rows[0].Cells[3].Style.ForeColor = Color.BlueViolet;
+                dataGridView2.Rows[0].Cells[3].Value = "Low!";
+                byte[] sendData = encode.GetBytes("SENSOR3_ON ");
+                client.Send(sendData, sendData.Length, receivePoint1);
+            }
+            if (receiveString.Contains("SENSOR013_OFF"))
+            {
+                dataGridView2.Rows[0].Cells[3].Style.BackColor = Color.White;
+                dataGridView2.Rows[0].Cells[3].Style.ForeColor = Color.White;
+                dataGridView2.Rows[0].Cells[3].Value = "";
+                byte[] sendData = encode.GetBytes("SENSOR3_OFF");
+                client.Send(sendData, sendData.Length, receivePoint1);
+            }
+            if (receiveString.Contains("SENSOR101_ON "))
+                {
+                    dataGridView2.Rows[9].Cells[1].Style.BackColor = Color.Yellow;
+                    dataGridView2.Rows[9].Cells[1].Style.ForeColor = Color.BlueViolet;
+                    dataGridView2.Rows[9].Cells[1].Value = "Low!";
+                    byte[] sendData = encode.GetBytes("SENSOR1_ON ");
+                    client.Send(sendData, sendData.Length, receivePoint10);
+                }
+                if (receiveString.Contains("SENSOR101_OFF"))
+                {
+                    dataGridView2.Rows[9].Cells[1].Style.BackColor = Color.White;
+                    dataGridView2.Rows[9].Cells[1].Style.ForeColor = Color.White;
+                    dataGridView2.Rows[9].Cells[1].Value = "";
+                    byte[] sendData = encode.GetBytes("SENSOR1_OFF");
+                    client.Send(sendData, sendData.Length, receivePoint10);
+                }
+            //}
+            //if (m2 == 0)
+            //{
+                if (receiveString.Contains("SENSOR102_ON "))
+                {
+                    dataGridView2.Rows[9].Cells[2].Style.BackColor = Color.Yellow;
+                    dataGridView2.Rows[9].Cells[2].Style.ForeColor = Color.BlueViolet;
+                    dataGridView2.Rows[9].Cells[2].Value = "Low!";
+                    byte[] sendData = encode.GetBytes("SENSOR2_ON ");
+                    client.Send(sendData, sendData.Length, receivePoint10);
+                }
+                if (receiveString.Contains("SENSOR102_OFF"))
+                {
+                    dataGridView2.Rows[9].Cells[2].Style.BackColor = Color.White;
+                    dataGridView2.Rows[9].Cells[2].Style.ForeColor = Color.White;
+                    dataGridView2.Rows[9].Cells[2].Value = "";
+                    byte[] sendData = encode.GetBytes("SENSOR2_OFF");
+                    client.Send(sendData, sendData.Length, receivePoint10);
+                }
+            //}
+            //if (m3 == 0)
+            //{
+                if (receiveString.Contains("SENSOR103_ON "))
+                {
+                    dataGridView2.Rows[9].Cells[3].Style.BackColor = Color.Yellow;
+                    dataGridView2.Rows[9].Cells[3].Style.ForeColor = Color.BlueViolet;
+                    dataGridView2.Rows[9].Cells[3].Value = "Low!";
+                    byte[] sendData = encode.GetBytes("SENSOR3_ON ");
+                    client.Send(sendData, sendData.Length, receivePoint10);
+                }
+                if (receiveString.Contains("SENSOR103_OFF"))
+                {
+                    dataGridView2.Rows[9].Cells[3].Style.BackColor = Color.White;
+                    dataGridView2.Rows[9].Cells[3].Style.ForeColor = Color.White;
+                    dataGridView2.Rows[9].Cells[3].Value = "";
+                    byte[] sendData = encode.GetBytes("SENSOR3_OFF");
+                    client.Send(sendData, sendData.Length, receivePoint10);
+                }
+            //}
+            if(receiveString.Contains("BUTTON1_ON "))
+            {
+                byte[] sendData = encode.GetBytes("BUTTON1_ON ");
+                client.Send(sendData, sendData.Length, receivePoint);
+            //    m1 = 1;
+            }
+            if (receiveString.Contains("BUTTON2_ON "))
+            {
+                byte[] sendData = encode.GetBytes("BUTTON2_ON ");
+                client.Send(sendData, sendData.Length, receivePoint);
+            //    m2 = 1;
+            }
+            if (receiveString.Contains("BUTTON3_ON "))
+            {
+                byte[] sendData = encode.GetBytes("BUTTON3_ON ");
+                client.Send(sendData, sendData.Length, receivePoint);
+             //   m3 = 1;
+            }
+            if (receiveString.Contains("BUTTON1_OFF"))
+            {
+                byte[] sendData = encode.GetBytes("BUTTON1_OFF");
+                client.Send(sendData, sendData.Length, receivePoint);
+             //   m1 = 0;
+            }
+            if (receiveString.Contains("BUTTON2_OFF"))
+            {
+                byte[] sendData = encode.GetBytes("BUTTON2_OFF");
+                client.Send(sendData, sendData.Length, receivePoint);
+             //   m2 = 0;
+            }
+            if (receiveString.Contains("BUTTON3_OFF"))
+            {
+                byte[] sendData = encode.GetBytes("BUTTON3_OFF");
+                client.Send(sendData, sendData.Length, receivePoint);
+            //    m3 = 0;
+            }
+            client.BeginReceive((new AsyncCallback(ReceiveCallback)), s);
+        }
+
+        private void initializeVariables()
+        {
+            int port = 1234; //Port for the Client to use
+            client = new UdpClient(port);
+            receivePoint = new IPEndPoint(IPAddress.Parse("10.0.1.41"), port);
+            receivePoint1 = new IPEndPoint(IPAddress.Parse("10.0.1.60"), port);
+            receivePoint10 = new IPEndPoint(IPAddress.Parse("10.0.1.70"), port);
+            encode = new System.Text.ASCIIEncoding();
+            s = new UdpState();
+            s.e = receivePoint;
+            s.u = client;
+            client.BeginReceive((new AsyncCallback(ReceiveCallback)), s);
+        }
+
+
+        public void clearAll()
+        {
+            for (int k = 1; k <= 3; k++)
+            {
+                byte[] sendData = encode.GetBytes("SENSOR" + k + "_OFF");
+                //client.Send(sendData, sendData.Length, "localhost", 1234);
+                client.Send(sendData, sendData.Length, receivePoint);
+            }
+        }
+
+
+        private void timer13_Tick(object sender, EventArgs e)
+        {
+            label3.Text = DateTime.Now.ToString("yyyy-MM-dd  HH:mm:ss");
+            
+        }
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            date1 = DateTime.Now.ToString("HH:mm:ss");
+            for (n = 0; n < i; n++)
+            {
+
+                if(date2[n]!=null)
+                {
+                    if (date2[n].Equals(date1))
+                    {
+                        if (blt[n] == "1")
+                        {
+                            //dataGridView1.EndEdit();
+                            byte[] sendData = encode.GetBytes("BUTTON1_ON ");
+                            ip =string.Concat( "10.0.1." ,(remote[n] + 40).ToString());
+                            receivePoint0 = new IPEndPoint(IPAddress.Parse(ip), 1234);
+                            client.Send(sendData, sendData.Length, receivePoint0);
+                            progressBar2.Maximum = (Convert.ToInt32(date3[n])) * 60;
+                            progressBar2.Value = 0;
+                            progressBar2.Visible = true;
+                            timer2.Interval = (Convert.ToInt32(date3[n])) * 1000;
+                            timer2.Enabled = true;
+                            timer7.Enabled = true;
+                        }
+                        if (blt[n] == "2")
+                        {
+                            //dataGridView1.EndEdit();
+                            byte[] sendData = encode.GetBytes("BUTTON2_ON ");
+                            ip = string.Concat("10.0.1.", (remote[n] + 40).ToString());
+                            receivePoint0 = new IPEndPoint(IPAddress.Parse(ip), 1234);
+                            client.Send(sendData, sendData.Length, receivePoint0);
+                            progressBar3.Maximum = (Convert.ToInt32(date3[n])) * 60;
+                            progressBar3.Value = 0;
+                            progressBar3.Visible = true;
+                            timer3.Interval = (Convert.ToInt32(date3[n])) * 1000;
+                            timer3.Enabled = true;
+                            timer8.Enabled = true;
+                        }
+                        if (blt[n] == "3")
+                        {
+                            //dataGridView1.EndEdit();
+                            byte[] sendData = encode.GetBytes("BUTTON3_ON ");
+                            ip = string.Concat("10.0.1.", (remote[n] + 40).ToString());
+                            receivePoint0 = new IPEndPoint(IPAddress.Parse(ip), 1234);
+                            client.Send(sendData, sendData.Length, receivePoint0);
+                            progressBar4.Maximum = (Convert.ToInt32(date3[n])) * 60;
+                            progressBar4.Value = 0;
+                            progressBar4.Visible = true;
+                            timer4.Interval = (Convert.ToInt32(date3[n])) * 1000;
+                            timer4.Enabled = true;
+                            timer9.Enabled = true;
+                        }
+                    }
+                    
+                }
+            }
+        }
+
+        private void timer2_Tick_1(object sender, EventArgs e)
+        {
+            
+            //byte[] sendData = encode.GetBytes("BUTTON1_OFF");
+            //client.Send(sendData, sendData.Length, receivePoint00);
+            
+            timer2.Enabled = false;
+        }
+
+        private void timer3_Tick_1(object sender, EventArgs e)
+        {
+            
+            //byte[] sendData = encode.GetBytes("BUTTON2_OFF");
+            //client.Send(sendData, sendData.Length, receivePoint00);
+            
+            timer3.Enabled = false;
+        }
+
+        private void timer4_Tick_1(object sender, EventArgs e)
+        {
+            //byte[] sendData = encode.GetBytes("BUTTON3_OFF");
+            //client.Send(sendData, sendData.Length, receivePoint00);
+            
+            timer4.Enabled = false;
+        }
+        private void dateTimePicker1_ValueChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        void loadtable() 
+        {
+            
+            string constring = "datasource=localhost;port=3306;username=root;password=root";
+            MySqlConnection condatabase = new MySqlConnection(constring);
+            MySqlCommand cmddatabas = new MySqlCommand("select*from database.etable", condatabase);
+
+
+            try
+            {
+                MySqlDataAdapter sda = new MySqlDataAdapter();
+                sda.SelectCommand = cmddatabas;
+                DataTable dbdataset = new DataTable();
+                sda.Fill(dbdataset);
+                BindingSource bSource = new BindingSource();
+
+                bSource.DataSource = dbdataset;
+                dataGridView1.DataSource = bSource;
+                sda.Update(dbdataset);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+
+            }
+        }
+        void loadtable1()
+        {
+
+            string constring = "datasource=localhost;port=3306;username=root;password=root";
+            MySqlConnection condatabase = new MySqlConnection(constring);
+            MySqlCommand cmddatabas = new MySqlCommand("select*from database.table2", condatabase);
+
+
+            try
+            {
+                MySqlDataAdapter sda = new MySqlDataAdapter();
+                sda.SelectCommand = cmddatabas;
+                DataTable dbdataset = new DataTable();
+                sda.Fill(dbdataset);
+                BindingSource bSource = new BindingSource();
+
+                bSource.DataSource = dbdataset;
+                dataGridView2.DataSource = bSource;
+                sda.Update(dbdataset);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+
+            }
+            
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label8_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label2_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void timer5_Tick(object sender, EventArgs e)
+        {
+            
+            label19.Text = tm.ToString();
+            timer6.Interval = 1000;
+            timer6.Enabled = true;
+            
+
+        }
+
+        private void progressBar1_Click(object sender, EventArgs e)
+        {
+
+        }
+        private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            
+        }
+
+        private void timer6_Tick(object sender, EventArgs e)
+        {
+            tm++;
+            timer6.Enabled = false;
+        }
+
+        private void progressBar2_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void timer7_Tick(object sender, EventArgs e)
+        {
+            //progressBar2.Visible = true;
+            progressBar2.PerformStep();
+            if (progressBar2.Value == progressBar2.Maximum)
+            {
+                timer10.Interval = 1000;
+                timer10.Enabled = true;
+            }   
+            
+        }
+
+        private void dateTimePicker1_ValueChanged_1(object sender, EventArgs e)
+        {
+
+        }
+
+        private void timer8_Tick(object sender, EventArgs e)
+        {
+            //progressBar3.Visible = true;
+            progressBar3.PerformStep();
+            if (progressBar3.Value == progressBar3.Maximum)
+            {
+                //progressBar3.Visible = false;
+                //timer8.Enabled = false;
+                timer11.Interval = 1000;
+                timer11.Enabled = true;
+            }   
+            
+        }
+
+        private void timer9_Tick(object sender, EventArgs e)
+        {
+            //progressBar4.Visible = true;
+            progressBar4.PerformStep();
+            if (progressBar4.Value == progressBar4.Maximum)
+            {
+                //progressBar4.Visible = false;
+                //timer9.Enabled = false;
+                timer12.Interval = 1000;
+                timer12.Enabled = true;
+            }   
+            
+        }
+
+        private void timer10_Tick(object sender, EventArgs e)
+        {
+            progressBar2.Visible = false;
+            timer7.Enabled = false;
+            timer10.Enabled = false;
+        }
+
+        private void timer11_Tick(object sender, EventArgs e)
+        {
+            progressBar3.Visible = false;
+            timer8.Enabled = false;
+            timer11.Enabled = false;
+        }
+
+        private void timer12_Tick(object sender, EventArgs e)
+        {
+            progressBar4.Visible = false;
+            timer9.Enabled = false;
+            timer12.Enabled = false;
+        }
+        
+        private void panel1_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
+
+        private void label9_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button14_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button15_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        public bool ExportDataGridview(DataGridView gridView, bool isShowExcle)
+        {
+            try
+            {
+                if (gridView.Rows.Count == 0)
+            {
+                return false;
+            }
+            //Create  Excel
+            Microsoft.Office.Interop.Excel.Application excel = new Microsoft.Office.Interop.Excel.Application();
+            excel.Application.Workbooks.Add(true);
+
+            //generate column header
+            for (int i = 0; i < gridView.ColumnCount; i++)
+            {
+                excel.Cells[1, i + 1] = gridView.Columns[i].HeaderText;
+                excel.Cells[1, i+1].Style.Font.Size = 30;
+                excel.Columns.AutoFit();
+
+            }
+            //fill data
+            for (int i = 0; i < gridView.RowCount - 1; i++)   
+            {
+                for (int j = 0; j < gridView.ColumnCount; j++) 
+                {
+                    
+                    if (gridView[j, i].ValueType == typeof(string))
+                    {
+                        excel.Cells[i + 2, j + 1] = "'" + gridView.Rows[i].Cells[j].Value.ToString();
+                        excel.Cells[i+2,j+1].Style.HorizontalAlignment = Microsoft.Office.Interop.Excel.XlHAlign.xlHAlignCenter;
+                        excel.Columns.AutoFit();
+                    }
+                    else
+                    {
+                        excel.Cells[i + 2, j + 1] = gridView.Rows[i].Cells[j].Value.ToString();
+                        excel.Cells[i + 2, j + 1].Style.HorizontalAlignment = Microsoft.Office.Interop.Excel.XlHAlign.xlHAlignCenter;
+                        excel.Columns.AutoFit();
+                    }
+                }
+            }
+
+            //alert display  
+            excel.Visible = false;
+            excel.DisplayAlerts = false;
+            excel.AlertBeforeOverwriting = false;
+
+            //save
+            //excel.Application.Workbooks.Add(true).Save();
+            //save document
+
+
+
+            //excel.ActiveWorkbook.SaveAs("e:" + "\\Sheet1", Excel.XlFileFormat.xlExcel7, null, null, false, false, Excel.XlSaveAsAccessMode.xlNoChange, null, null, null, null, null);
+            
+            excel.Save();
+            excel.Quit();
+            excel = null;
+        }
+            catch (Exception ex)
+            {
+                //MessageBox.Show(ex.Message);
+            }
+
+            //Excel.output((DataTable)dataGridView1.DataSource);
+
+            return true;
+        }
+
+        private void timer14_Tick(object sender, EventArgs e)
+        {
+
+            
+            for (int m = 0; m < i; m++)
+            {
+                string[] date2 = new string[128];
+                string[] blt = new string[128];
+                int[] date3 = new int[128];
+                string[] rcd = new string[128];
+                string[] remote = new string[128];
+                string[] stoptime = new string[128];
+                i = 0;
+                string constring = "datasource=localhost;port=3306;username=root;password=root";
+                string Query = "delete from database.etable ";
+
+                MySqlConnection condatabase = new MySqlConnection(constring);
+                MySqlCommand cmddatabas = new MySqlCommand(Query, condatabase);
+                MySqlDataReader myreader;
+                try
+                {
+                    condatabase.Open();
+                    myreader = cmddatabas.ExecuteReader();
+                    while (myreader.Read())
+                    {
+                    }
+                }
+                catch (Exception ex)
+                {
+                    
+                }
+                
+            }
+            for (int r = 0; r < dataGridView1.RowCount - 1; r++)
+            {
+                
+                trcd = dataGridView1.Rows[r].Cells[0].Value.ToString();
+                rmt = dataGridView1.Rows[r].Cells[1].Value.ToString();
+                tblt = dataGridView1.Rows[r].Cells[2].Value.ToString();
+                tdate2 = dataGridView1.Rows[r].Cells[3].Value.ToString();
+                tdate3 = dataGridView1.Rows[r].Cells[4].Value.ToString();
+
+
+                textBox5.Text = trcd;
+                rcd[i] = trcd;
+                textBox1.Text = tdate2;
+                date2[i] = tdate2;
+                textBox3.Text = tdate3;
+                date3[i] = tdate3;
+                textBox2.Text = tblt;
+                blt[i] = tblt;
+                textBox6.Text = rmt;
+                remote[i] = Convert.ToInt32(rmt);
+                i++;
+                string constring = "datasource=localhost;port=3306;username=root;password=root";
+                string Query = "insert into database.etable(sn,feeding_time,belt,duration,remote)values('" + this.textBox5.Text + "','" + this.textBox1.Text + "','" + this.textBox2.Text + "','" + this.textBox3.Text + "','"+this.textBox6.Text+"');";
+
+                MySqlConnection condatabase = new MySqlConnection(constring);
+                MySqlCommand cmddatabas = new MySqlCommand(Query, condatabase);
+                MySqlDataReader myreader;
+                try
+                {
+                    condatabase.Open();
+                    myreader = cmddatabas.ExecuteReader();
+
+                    while (myreader.Read())
+                    {
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+
+                }
+                
+                
+            }
+            loadtable();
+            timer14.Enabled = false;
+        }
+
+        private void panel3_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
+        private void button7_Click_1(object sender, EventArgs e)
+        {
+            button7.BackColor = Color.WhiteSmoke;
+            for (int r = 0; r < dataGridView1.RowCount - 1; r++)
+            {
+
+
+                trcd = dataGridView1.Rows[r].Cells[0].Value.ToString();
+                rmt = dataGridView1.Rows[r].Cells[1].Value.ToString();
+                tblt = dataGridView1.Rows[r].Cells[2].Value.ToString();
+                tdate2 = dataGridView1.Rows[r].Cells[3].Value.ToString();
+                tdate3 = dataGridView1.Rows[r].Cells[4].Value.ToString();
+
+
+                DateTime stp = Convert.ToDateTime(tdate2);
+                
+                DateTime stp1 = stp.AddSeconds(Convert.ToInt32(tdate3));
+                
+                rcd[r] = trcd;
+                date2[r] = tdate2;
+                date3[r] = tdate3;
+                blt[r] = tblt;
+                remote[r] = Convert.ToInt32(rmt);
+                stoptime[r] = stp1.ToString("HH:mm:ss");
+                
+
+                i++;
+                button9.BackColor = Color.LightGray;
+                button8.Visible = false;
+                button17.Visible = false;
+                button18.Visible = false;
+            }
+            MessageBox.Show("Data updated!");
+            button7.BackColor = Color.LightGray;
+        }
+
+        private void button8_Click_1(object sender, EventArgs e)
+        {
+
+            for (int r = 0; r < dataGridView1.RowCount - 1; r++)
+            {
+                string[] date2 = new string[128];
+                string[] blt = new string[128];
+                int[] date3 = new int[128];
+                string[] rcd = new string[128];
+                string[] remote = new string[128];
+                string[] stoptime = new string[128];
+                i = 0;
+                string constring = "datasource=localhost;port=3306;username=root;password=root";
+                string Query = "delete from database.etable ";
+
+                MySqlConnection condatabase = new MySqlConnection(constring);
+                MySqlCommand cmddatabas = new MySqlCommand(Query, condatabase);
+                MySqlDataReader myreader;
+                try
+                {
+                    condatabase.Open();
+                    myreader = cmddatabas.ExecuteReader();
+
+                    while (myreader.Read())
+                    {
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception(ex.Message);
+                }
+                loadtable();
+            }
+            MessageBox.Show("New table created!");
+            button9.BackColor = Color.LightGray;
+            button8.Visible = false;
+            button17.Visible = false;
+            button18.Visible = false;
+        }
+
+        private void button18_Click_1(object sender, EventArgs e)
+        {
+
+            OpenFileDialog opfiledialog1 = new OpenFileDialog();
+            if (opfiledialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                this.textBox4.Text = opfiledialog1.FileName;
+                string pathconn = "Provider=MicroSoft.Jet.OLEDB.4.0;Data Source=" + textBox4.Text + ";Extended Properties=\"Excel 8.0;HDR=Yes;\";";
+                OleDbConnection conn = new OleDbConnection(pathconn);
+                OleDbDataAdapter mydataadapter = new OleDbDataAdapter("Select*from[sheet1$]", conn);
+                DataTable dt3 = new DataTable();
+                mydataadapter.Fill(dt3);
+                dataGridView1.DataSource = dt3;
+                timer14.Enabled = true;
+                button9.BackColor = Color.LightGray;
+                button8.Visible = false;
+                button17.Visible = false;
+                button18.Visible = false;
+
+            }
+        }
+
+        private void button17_Click_1(object sender, EventArgs e)
+        {
+            ExportDataGridview(dataGridView1, true);
+            button9.BackColor = Color.LightGray;
+            button8.Visible = false;
+            button17.Visible = false;
+            button18.Visible = false;
+        }
+
+
+        private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            man = comboBox2.Text;
+            manip = Convert.ToInt32(man);
+        }    
+        private void comboBox1_SelectedIndexChanged_1(object sender, EventArgs e)
+        {
+            m = comboBox1.Text;
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            tm = 0;
+            timer5.Enabled = true;
+            timer6.Enabled = true;
+            progressBar1.Style = ProgressBarStyle.Marquee;
+            progressBar1.MarqueeAnimationSpeed = 30;
+            //this.timer5.Start();
+            //if (button1.Text == "Start Feeding")
+            //{
+            //button1.Text = "Feeding...";
+            // button1.BackColor = Color.Gold;
+            byte[] sendData = encode.GetBytes("BUTTON" + m + "_ON ");
+
+            ip2 = string.Concat("10.0.1.", (manip + 40).ToString());
+            receivePointm = new IPEndPoint(IPAddress.Parse(ip2), 1234);
+            client.Send(sendData, sendData.Length, receivePointm);
+            
+            //}
+            
+        }
+
+        private void button3_Click_1(object sender, EventArgs e)
+        {
+            timer5.Enabled = false;
+            timer6.Enabled = false;
+            label19.Text = "0";
+            progressBar1.Style = ProgressBarStyle.Continuous;
+            progressBar1.MarqueeAnimationSpeed = 0;
+            //this.timer5.Stop();
+            //if (button1.Text == "Feeding...")
+            //{
+            //button1.Text = "Start Feeding";
+            //button1.BackColor = Color.LightBlue;
+            byte[] sendData = encode.GetBytes("BUTTON" + m + "_OFF");
+            ip2 = string.Concat("10.0.1.", (manip + 40).ToString());
+            receivePointm = new IPEndPoint(IPAddress.Parse(ip2), 1234);
+            client.Send(sendData, sendData.Length, receivePointm);
+            //}
+
+        }
+
+        private void progressBar1_Click_1(object sender, EventArgs e)
+        {
+
+        }
+
+        
+        private void button5_Click_1(object sender, EventArgs e)
+        {
+            view1++;
+            if (view % 2 != 0)
+            {
+                listView1.Visible = true;
+            }
+            else 
+            {
+                listView1.Visible = false;
+            }
+        }
+
+        private void listView1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void timer15_Tick(object sender, EventArgs e)
+        {
+            date1 = DateTime.Now.ToString("HH:mm:ss");
+            for (int j = 0; j < i; j++) 
+            { 
+                if (stoptime[j]==date1)
+                {
+                    if (blt[j] == "1")
+                    {
+                        //dataGridView1.EndEdit();
+                        byte[] sendData = encode.GetBytes("BUTTON1_OFF");
+                        ip1 = string.Concat("10.0.1.", (remote[j] + 40).ToString());
+                        receivePoint00 = new IPEndPoint(IPAddress.Parse(ip1), 1234);
+                        client.Send(sendData, sendData.Length, receivePoint00);
+                    }
+                    if (blt[j] == "2")
+                    {
+                        //dataGridView1.EndEdit();
+                        byte[] sendData = encode.GetBytes("BUTTON2_OFF");
+                        ip1 = string.Concat("10.0.1.", (remote[j] + 40).ToString());
+                        receivePoint00 = new IPEndPoint(IPAddress.Parse(ip1), 1234);
+                        client.Send(sendData, sendData.Length, receivePoint00);
+                    }
+                    if (blt[j] == "3")
+                    {
+                        //dataGridView1.EndEdit();
+                        byte[] sendData = encode.GetBytes("BUTTON3_OFF");
+                        ip1 = string.Concat("10.0.1.", (remote[j] + 40).ToString());
+                        receivePoint00 = new IPEndPoint(IPAddress.Parse(ip1), 1234);
+                        client.Send(sendData, sendData.Length, receivePoint00);
+                    }
+                }
+            }
+
+        }
+
+        private void textBox6_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button9_Click(object sender, EventArgs e)
+        {
+            file++;
+            if (file % 2 != 0)
+            {
+                button9.BackColor = Color.WhiteSmoke;
+                button8.Visible = true;
+                button17.Visible = true;
+                button18.Visible = true;
+            }
+            else
+            {
+                button9.BackColor = Color.LightGray;
+                button8.Visible = false;
+                button17.Visible = false;
+                button18.Visible = false;
+            }
+            button19.BackColor = Color.LightGray;
+            button5.Visible = false;
+            listView1.Visible = false;
+            view = 0;
+        }
+
+        private void button19_Click(object sender, EventArgs e)
+        {
+            view++;
+            if (view % 2 != 0)
+            {
+                button19.BackColor = Color.WhiteSmoke;
+                button5.Visible = true;
+            }
+            else
+            {
+                button19.BackColor = Color.LightGray;
+                button5.Visible = false;
+            }
+            button9.BackColor = Color.LightGray;
+            button8.Visible = false;
+            button17.Visible = false;
+            button18.Visible = false;
+            listView1.Visible = false;
+            file = 0;
+        }
+
+        private void dataGridView1_CellContentClick_1(object sender, DataGridViewCellEventArgs e)
+        {
+
+        }
+
+        private void dataGridView2_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+
+        }
+
+        private void label4_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            mode++;
+            if (mode % 2 == 0)
+            {
+                dataGridView1.Enabled = false;
+                button7.Enabled = false;
+                button9.Enabled = false;
+                button19.Enabled = false;
+                panel5.Enabled = false;
+                panel1.Enabled = true;
+                MessageBox.Show("MANUAL Feeding Mode Activated!");
+            }
+            else
+            {
+                dataGridView1.Enabled = true;
+                button7.Enabled = true;
+                button9.Enabled = true;
+                button19.Enabled = true;
+                panel5.Enabled = true;
+                panel1.Enabled = false;
+                MessageBox.Show("AUTO Feeding Mode Activated!");
+            }
+        }
+
+
+    }
+
+        public class UdpState
+    {
+        public UdpClient u;
+        public IPEndPoint e;
+    }
+}

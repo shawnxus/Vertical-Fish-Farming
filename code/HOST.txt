@@ -1,0 +1,341 @@
+ /*
+Variable storage can be either auto or static.The default storage class of Dynamic C is static.
+By changing to auto to make local variable with no explicit storage class in functions default to auto
+ */
+
+#class auto
+
+
+//NETWORK CONFIGURATION
+
+#define TCPCONFIG 1										  		//No DHCP(allows a computer to join an IP-based network without having a pre-configured IP address), when define "TCPCONFIG 5", DHCP enable
+#define _PRIMARY_STATIC_IP "10.0.1.55"				  		//IP address of  RABBIT RCM5600W MiniCore module
+#define  MY_GATEWAY "10.0.0.1"								//IP address of router
+#define MY_NAMESERVER "10.0.0.1"								//Nameserver IP address
+#define IFC_WIFI_SSID "SIP_MP"								//SSID name of network
+#define IFC_WIFI_ENCRYPTION  IFPARAM_WIFI_ENCR_NONE	//Disable encryption(no password is needed)
+#define _PRIMARY_NETMASK "255.255.0.0"						//Configure subnetmask
+
+
+/*
+  number of socket buffers that will be allocated for
+  UDP sockets.  We only need one UDP socket, so one socket buffer
+  will be enough.
+*/
+
+
+#define MAX_UDP_SOCKET_BUFFERS 1						//Allocate a socket buffer for the UDP socket.
+
+
+/**************************
+ * UDP demo configuration *
+ **************************/
+
+
+#define HEARTBEAT_RATE 	200							//send out UDP packet each 200ms
+#define LOCAL_PORT	1234								//the local port to receive datagrams on
+#define REMOTE_IP	"10.0.1.50"							//define remote ip to 10.0.1.50 (255.255.255.255 is the broadcast IP)
+#define REMOTE_PORT	1234								//define the destination port to send to.
+
+
+/********************************
+ * End of configuration section *
+ ********************************/
+
+
+
+#memmap xmem												//All C functions not declared as root go to extended memory
+#use "rcm56xxw.lib"								  		//Use this command to define a library
+#use "dcrtcp.lib"									  		//Use this command to define a library
+
+udp_Socket sock;											//the socket to use for UDP communication
+_udp_datagram_info udi;                         /*The info structure is a pointer to _udp_datagram_info (UDI),
+																which is set up with the usual udp_peek information such as the
+                                                host IP address and port number/*
+
+//DS = LED
+#define DS1 2												//define LED1=2
+#define DS2 3												//define LED2=3
+#define DS3 0												//define LED3=0
+
+//S = Switch
+#define S1  0												//define Switch1=0
+#define S2  2												//define Switch2=2
+#define S3  3												//define Switch3=3
+
+//on board
+#define BS1  1												//define BS1=1
+
+
+static int button1State;								//define button1state as static integer type variable
+static int button2State;								//define button2state as static integer type variable
+static int button3State;								//define button3state as static integer type variable
+
+//on board
+static int buttonState;									//define buttonstate as static integer type variable (on board)
+
+int send_packet(int button, int state)				//if button > state, send_packet=1;
+																//if button < state, send_packet=-1;
+																//if button = state, send_packet=0;
+{
+	auto char 	buf_send[128];							//define buf_send as auto char type array
+	auto int 	length, retval;						//define length, retval as auto int type variable
+
+/****************************************
+ *fill the packet with interesting data *
+ ****************************************/
+
+	switch(button)											//the case structure
+	{
+	case 1:											  		//check if button 1 is pressed
+		if(0 == state)								  		//if(0 = value stored in the variable "state")is true, do the following statements
+		sprintf(buf_send, "BUTTON1_ON ");			//store "BUTTON1_ON" into "buf_send" and display
+		else										  			//if(0 = value stored in the variable "state")is not true, do the following statements
+		sprintf(buf_send, "BUTTON1_OFF");			//store "BUTTON1_OFF" into "buf_send" and display
+		break;												//jump out the switch loop
+	case 2:													//check if button 2 is pressed
+		if(0 == state)
+		sprintf(buf_send, "BUTTON2_ON ");				//store "BUTTON2_ON" into buf_send and display
+		else
+		sprintf(buf_send, "BUTTON2_OFF");				//store "BUTTON2_OFF" into buf_send and display
+		break;													//jump out the switch loop
+	case 3:														//check if button 3 is pressed
+		if(0 == state)
+		sprintf(buf_send, "BUTTON3_ON ");				//store "BUTTON3_ON" into buf_send and display
+		else
+		sprintf(buf_send, "BUTTON3_OFF");				//store "BUTTON3_OFF" into buf_send and display
+		break;													//jump out the switch loop
+	default:										  				//if wrong button was pressed, do the following statements
+		sprintf(buf_send, "WRONG_BUTTON");				//store "WRONG_BUTTON" into buf_send and display
+		break;													//jump out the switch loop
+	}
+
+	length = strlen(buf_send) + 1;						//define length = the length of the string "buf_send" + 1
+
+
+/******************
+ *send the packet *
+ ******************/
+
+
+	retval = udp_send(&sock, buf_send, length);											//stored datagram will be sent to the retval
+	if (retval < 0)																				//check if the returned value contains error
+	{
+		printf("Error sending datagram!  Closing and reopening socket...\n");	//display the error message
+		sock_close(&sock);																		//close the socket resource given by socket
+		if(!udp_open(&sock, LOCAL_PORT, resolve(REMOTE_IP), REMOTE_PORT, NULL)) //check if udp packet was opened
+		{
+			printf("udp_open failed!\n");														//display the error message
+			exit(0);
+		}
+	}
+	else
+	{
+		printf("Transmitted -> %s\n",buf_send);											//display the transmission information
+	}
+
+	return 1;																						//stop send packet
+}
+
+
+/**********************************
+ * receive one packet (heartbeat) *
+ **********************************/
+
+
+int receive_packet(void)							  		//receive a datagram
+{
+	static char buf_receive[128];					  		//the array that will hold a received datagram
+
+	#GLOBAL_INIT												//initialize static variables in Static RAM (SRAM)
+	{
+		memset(buf_receive, 0, sizeof(buf_receive));	//clear buf_receive
+	}
+
+
+/***********************
+ *  receive the packet *
+ ***********************/
+
+
+	if (-1 == udp_recv(&sock, buf_receive, sizeof(buf_receive)))		//receive a datagram from the specified host
+	{
+		return 0;																		//if the return value is -1, there was no datagram, so return 0
+	}
+
+	printf("Received-> %s\n",buf_receive);										//display the message received
+
+	if (!strcmp(buf_receive, "SENSOR1_OFF"))						  			//check if sensor1 off
+	{
+		BitWrPortI(PADR, &PADRShadow, 1, DS1);						  			//turn off led1
+	}
+	else if (!strcmp(buf_receive, "SENSOR1_ON "))							//check if sensor1 on
+	{
+		BitWrPortI(PADR, &PADRShadow, 0, DS1);									//turn on led1
+	}
+	else if (!strcmp(buf_receive, "SENSOR2_OFF"))							//check if sensor2 off
+	{
+		BitWrPortI(PADR, &PADRShadow, 1, DS2);									//turn off led2
+	}
+	else if (!strcmp(buf_receive, "SENSOR2_ON "))							//check if sensor2 on
+	{
+		BitWrPortI(PADR, &PADRShadow, 0, DS2);									//turn on led2
+	}
+	else if (!strcmp(buf_receive, "SENSOR3_OFF"))							//check if sensor3 off
+	{
+		BitWrPortI(PADR, &PADRShadow, 1, DS3);									//turn off led3
+	}
+	else if (!strcmp(buf_receive, "SENSOR3_ON "))							//check if sensor3 on
+	{
+		BitWrPortI(PADR, &PADRShadow, 0, DS3);									//turn on led3
+	}
+
+	return 1;																			//end receive_packet
+}
+
+
+void main()
+{
+	button1State = 0;															//initialize button1state off
+	button2State = 0;												  			//initialize button2state off
+	button3State = 0;															//initialize button3state off
+
+	buttonState = 0;															//initialize buttonstate off
+
+	brdInit();																	//initialize port registers for the operation of the board
+
+	BitWrPortI(PCDDR, &PCDDRShadow, 0, S1);							//initialize switch1 off
+	BitWrPortI(PCDDR, &PCDDRShadow, 0, S2);							//initialize switch2 off
+	BitWrPortI(PCDDR, &PCDDRShadow, 0, S3);							//initialize switch3 off
+
+
+/************
+ * on board *
+ ************/
+
+	BitWrPortI(PDDDR, &PDDDRShadow, 0, BS1);							//initialize BS1 off
+
+
+	BitWrPortI(PADR, &PADRShadow, 1, DS1);								//initialize led1 off
+	BitWrPortI(PADR, &PADRShadow, 1, DS2);								//initialize led2 off
+	BitWrPortI(PADR, &PADRShadow, 1, DS3);								//initialize led3 off
+
+
+	sock_init_or_exit(1);													// Start network and wait for interface to come up (or error exit)
+
+	/*printf("Opening UDP socket\n");*/
+
+
+/*******************
+ * connection part *
+ *******************/
+
+
+	if(!udp_open(&sock, LOCAL_PORT, resolve(REMOTE_IP), REMOTE_PORT, NULL))		//check if packet was opened
+	{
+		printf("udp_open failed!\n");															//display the error message
+		exit(0);
+	}
+
+
+/*******************
+ * send heartbeats *
+ *******************/
+
+	for(;;)													//infinite loop
+	{
+		//putchar('.');
+		tcp_tick(NULL);									//Process network packets
+
+
+		costate												//task: network connection
+		{
+			waitfor(DelayMs(HEARTBEAT_RATE));		//delay 200ms
+
+
+
+/************
+ * Switch 1 *
+ ************/
+
+	if (!BitRdPortI(PCDR, S1))								//switch1 checking
+	{
+		if(0 == button1State)								//check if button1 released
+		{
+		printf("Button 1 released\n\n");					//display "Button 1 released"
+		button1State = 1;										//toggle button1state
+
+		waitfor(send_packet(1, button1State));			//wait for packet to be sent
+		}
+	}
+	else
+	{
+		if(1 == button1State)								//check if button1 pressed
+		{
+			printf("Button 1 pressed\n\n");				//display "Button 1 pressed"
+			button1State = 0;									//toggle button1state
+
+			waitfor(send_packet(1, button1State));		//wait for packet to be sent
+		}
+	}
+
+/************
+ * Switch 2 *
+ ************/
+
+	if (!BitRdPortI(PCDR, S2))								//switch2 checking
+	{
+		if(0 == button2State)								//check if button2 released
+		{
+			printf("Button 2 released\n\n");
+			button2State = 1;									//toggle button2state
+			waitfor(send_packet(2, button2State));		//wait for packet to be sent
+		}
+	}
+	else
+	{
+		if(1 == button2State)								//check if button2 pressed
+		{
+			printf("Button 2 pressed\n\n");				//display"button 2 pressed"
+			button2State = 0;									//toggle button2state
+
+			waitfor(send_packet(2, button2State));		//wait for packet to be sent
+		}
+	}
+
+
+/************
+ * Switch 3 *
+ ************/
+
+	if (!BitRdPortI(PCDR, S3))								//switch3 checking
+	{
+		if(0 == button3State)								//check if button3 released
+		{
+			printf("Button 3 released\n\n");				//display "Button 3 released"
+			button3State = 1;									//toggle button3state
+
+			waitfor(send_packet(3, button3State));		//wait for packet to be sent
+		}
+	}
+	else
+	{
+		if(1 == button3State)								//check if button3 pressed
+		{
+			printf("Button 3 pressed\n\n");				//display "Button 3 pressed"
+			button3State = 0;
+
+			waitfor(send_packet(3, button3State));		//wait for packet to be sent
+		}
+	}
+
+	}
+
+	costate 														//task:receive packet
+	{
+		waitfor(udp_peek(&sock, &udi));					//to wait for the packet
+		waitfor(receive_packet());							//wait for packet receive
+
+	}
+	}
+}
